@@ -14,6 +14,7 @@
 """
 import json
 import operator
+import time
 import os
 import uuid
 from datetime import datetime
@@ -175,7 +176,7 @@ def human(state: State) -> dict:
     pending = state["pending"]
     answer = interrupt(pending)  # pauses here; resumes with Command(resume=answer)
     counters = {**state["counters"], "consec_fail": 0}
-    step = {"n": len(state.get("steps", [])) + 1, "mode": state["mode"], "tool": "human", "why": "",
+    step = {"n": len(state.get("steps", [])) + 1, "at": time.time(), "mode": state["mode"], "tool": "human", "why": "",
             "url": state.get("url"), "screenshot": None}
     if pending["kind"] == "approval":
         approved = answer.get("decision") == "approve"

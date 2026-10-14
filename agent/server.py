@@ -126,6 +126,7 @@ async def get_run(thread_id: str):
         "steps": v.get("steps", []),
         "pending": next((i.value for t in snap.tasks for i in t.interrupts), None),
         "report": v.get("report"),
+        "counters": v.get("counters", {}),
         "active": bool(task and not task.done()),
         "interrupted": bool(snap.next) and not (task and not task.done()),  # stopped mid-run, e.g. a server restart
         "error": errors.get(thread_id),

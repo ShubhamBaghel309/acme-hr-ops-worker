@@ -5,6 +5,7 @@ executes it, observes the page, classifies the outcome and recovers where that i
 so the next step can adapt. Nothing here knows about any particular company or app.
 """
 import json
+import time
 import re
 from io import BytesIO
 from pathlib import Path
@@ -301,6 +302,6 @@ async def run_tool(call: dict, state: dict, browser: Browser, company: Company, 
                               + "\n- ".join(recent) + "\nHow should I proceed?"}
         counters["consec_fail"] = 0
     updates["counters"] = counters
-    updates["steps"] = [{"n": n, "mode": mode, "tool": tool, "args": args, "why": why, "outcome": outcome,
+    updates["steps"] = [{"n": n, "at": time.time(), "mode": mode, "tool": tool, "args": args, "why": why, "outcome": outcome,
                          "message": message, "url": updates.get("url", state.get("url")), "screenshot": screenshot}]
     return updates

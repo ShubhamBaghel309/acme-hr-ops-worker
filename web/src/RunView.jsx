@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import Icon from './Icons.jsx'
 import PendingCard from './PendingCard.jsx'
 
 const LABELS = {
@@ -7,38 +8,103 @@ const LABELS = {
 }
 export const statusLabel = status => LABELS[status] || status || 'Starting'
 
+const TOOL_LABEL = {
+  goto: 'Opened a page', click: 'Clicked', fill: 'Typed', select: 'Chose an option', open_attachment: 'Read a document',
+  record_fact: 'Remembered a fact', ask_human: 'Asked you', human: 'Your input', finish: 'Finished the work',
+  verdict: 'Checked a criterion',
+}
 const BAD = new Set(['rejected', 'page_error', 'server_error', 'auth_expired', 'blocked', 'stale_ref', 'error',
   'not_found', 'verify_failed', 'denied'])
 const WAIT = new Set(['needs_approval', 'asked', 'stopped'])
+const STAGES = ['Understand', 'Execute', 'Verify', 'Report']
 
 const fill = (text, facts) => text.replace(/\{(\w+)\}/g, (m, key) => (facts[key] ? facts[key].raw : m))
 
-function Icon({ kind }) {
+function duration(seconds) {
+  if (seconds == null) return '–'
+  const m = Math.floor(seconds / 60), s = Math.floor(seconds % 60)
+  return m ? `${m}m ${String(s).padStart(2, '0')}s` : `${s}s`
+}
+
+function Check({ kind }) {
   if (kind === 'pass') return (
-    <svg className="icon pass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" />
-      <path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>)
+    <svg className="mark pass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" />
+      <path className="draw" d="M7.5 12.5l3 3 6-6.5" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>)
   if (kind === 'fail') return (
-    <svg className="icon fail" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" />
+    <svg className="mark fail" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" />
       <path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="#fff" strokeWidth="2" strokeLinecap="round" /></svg>)
   if (kind === 'warn') return (
-    <svg className="icon" style={{ color: 'var(--orange)' }} viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" />
+    <svg className="mark warn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" />
       <path d="M12 7v6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" /><circle cx="12" cy="16.5" r="1.3" fill="#fff" /></svg>)
+  if (kind === 'spin') return <span className="spinner" />
+  return <svg className="mark pending" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" fill="none" /></svg>
+}
+
+function stageOf(run) {
+  if (run.report) return 4
+  if (!run.spec) return 0
+  return run.mode === 'verify' ? 2 : 1
+}
+
+function StageTrack({ run }) {
+  const at = stageOf(run)
   return (
-    <svg className="icon pending" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" fill="none" /></svg>)
+    <div className="stages">
+      {STAGES.map((name, i) => {
+        const state = i < at ? 'done' : i === at ? (run.pending ? 'waiting' : 'current') : 'todo'
+        return (
+          <div key={name} className={`stage ${state}`}>
+            <div className="stage-dot">{state === 'done' ? <Icon name="verdict" size={13} /> : i + 1}</div>
+            <div className="stage-name">{name}</div>
+          </div>
+        )
+      })}
+      <div className="stage-line"><div className="stage-fill" style={{ width: `${Math.min(at, 3) / 3 * 100}%` }} /></div>
+    </div>
+  )
 }
 
-function statusOf(run) {
-  if (run.pending) return { dot: 'waiting', text: 'Waiting for you' }
-  if (run.active) return { dot: 'running', text: run.mode === 'verify' ? 'Verifying its work' : 'Working' }
-  return { dot: run.status, text: statusLabel(run.status) }
+function useClock(active) {
+  const [now, setNow] = useState(Date.now() / 1000)
+  useEffect(() => {
+    if (!active) return
+    const t = setInterval(() => setNow(Date.now() / 1000), 1000)
+    return () => clearInterval(t)
+  }, [active])
+  return now
 }
 
-function Criteria({ criteria }) {
+function stats(run, now) {
+  const timed = run.steps.filter(s => s.at)
+  const first = timed[0]?.at
+  const last = run.active || run.pending ? now : timed[timed.length - 1]?.at
+  const tokens = (run.counters?.tokens_in || 0) + (run.counters?.tokens_out || 0)
+  return {
+    steps: run.steps.filter(s => s.tool !== 'human').length,
+    elapsed: first && last ? last - first : null,
+    tokens,
+    approvals: run.steps.filter(s => s.tool === 'human' && s.outcome === 'approved').length,
+    recovered: run.steps.filter(s => BAD.has(s.outcome)).length,
+  }
+}
+
+function StatRow({ s }) {
+  return (
+    <div className="stat-row">
+      <div className="stat"><div className="stat-value">{s.steps}</div><div className="stat-label">actions</div></div>
+      <div className="stat"><div className="stat-value">{duration(s.elapsed)}</div><div className="stat-label">elapsed</div></div>
+      <div className="stat"><div className="stat-value">{s.tokens ? `${Math.round(s.tokens / 1000)}k` : '–'}</div><div className="stat-label">tokens</div></div>
+      <div className="stat"><div className="stat-value">{s.recovered}</div><div className="stat-label">problems handled</div></div>
+    </div>
+  )
+}
+
+function Criteria({ items, live }) {
   return (
     <div className="group">
-      {criteria.map(c => (
-        <div className="group-row" key={c.id}>
-          <Icon kind={c.status === 'pass' ? 'pass' : c.status === 'fail' ? 'fail' : 'pending'} />
+      {items.map(c => (
+        <div className={`group-row crit ${c.status}`} key={c.id}>
+          <Check kind={c.status === 'pass' ? 'pass' : c.status === 'fail' ? 'fail' : live ? 'spin' : 'pending'} />
           <div className="row-body">
             <div className="row-label">{c.text}</div>
             {(c.quotes || []).slice(0, 3).map((q, i) => <div className="quote" key={i}>“<span>{q}</span>”</div>)}
@@ -51,43 +117,76 @@ function Criteria({ criteria }) {
   )
 }
 
-function Summary({ run }) {
-  const { report, spec, facts, verdicts } = run
-  if (!report) {
-    if (!spec) return <p className="footnote">Reading the request and the company's procedures…</p>
-    const criteria = spec.criteria.map(c => ({ ...c, text: fill(c.text, facts), ...(verdicts[c.id] || { status: 'not checked' }) }))
-    return (
-      <>
-        <div className="group-title">Goal</div>
-        <div className="group"><div className="group-row plain"><div className="row-body">
-          <div className="row-label">{spec.goal}</div>
-          <div className="row-tertiary">Procedure: {spec.sop}</div>
-        </div></div></div>
-        <div className="group-title">Plan</div>
-        <div className="group">
-          {spec.plan.map((p, i) => (
-            <div className="group-row plain" key={i}><span className="step-n">{i + 1}</span><div className="row-body">{p}</div></div>
-          ))}
-        </div>
-        <div className="group-title">Success criteria</div>
-        <Criteria criteria={criteria} />
-      </>
-    )
-  }
-  const good = report.status === 'done'
+function BrowserFrame({ shot, url, onZoom, live }) {
+  return (
+    <div className="window">
+      <div className="window-bar">
+        <span className="light r" /><span className="light y" /><span className="light g" />
+        <div className="address">{live && <span className="rec" />}{url || 'acme portal'}</div>
+      </div>
+      <div className="window-body">
+        {shot ? <img key={shot} className="shot" src={`/runs/${shot}`} alt="What the worker sees" onClick={() => onZoom(shot)} />
+          : <div className="window-empty"><span className="spinner" /> Opening the browser…</div>}
+      </div>
+    </div>
+  )
+}
+
+function Live({ run, onZoom, s }) {
+  const steps = run.steps
+  const last = [...steps].reverse().find(x => x.tool !== 'human') || null
+  const shot = [...steps].reverse().find(x => x.screenshot)?.screenshot
+  const facts = run.facts
+  const criteria = (run.spec?.criteria || []).map(c => ({ ...c, text: fill(c.text, facts), ...(run.verdicts[c.id] || { status: 'not checked' }) }))
   return (
     <>
-      <div className="group">
-        <div className="banner">
-          <Icon kind={good ? 'pass' : report.status === 'stopped' ? 'warn' : 'fail'} />
-          <div>
-            <div className="banner-title">{report.headline}</div>
-            <div className="row-secondary">
-              {good ? 'Every criterion was independently verified.'
-                : report.stopped_because ? `Stopped: ${report.stopped_because}` : 'Some criteria were not met.'}
+      <div className="live">
+        <BrowserFrame shot={shot} url={last?.url} onZoom={onZoom} live={run.active} />
+        <div className="now">
+          <div className="now-label">{run.pending ? 'Waiting for you' : run.mode === 'verify' ? 'Verifying' : 'Right now'}</div>
+          {last ? (
+            <div className="now-step" key={last.n}>
+              <div className="now-icon"><Icon name={last.tool} size={22} /></div>
+              <div>
+                <div className="now-title">{TOOL_LABEL[last.tool] || last.tool}</div>
+                <div className="now-why">{last.why || last.message || '…'}</div>
+              </div>
             </div>
-          </div>
+          ) : <div className="now-why">Reading the request and the company playbook…</div>}
+          <StatRow s={s} />
         </div>
+      </div>
+      {run.spec && (
+        <>
+          <div className="group-title">{run.mode === 'verify' ? 'Being verified now' : 'Done means'}</div>
+          <Criteria items={criteria} live={run.mode === 'verify' && run.active} />
+          <div className="group-title">The plan it made</div>
+          <div className="group">
+            {run.spec.plan.map((p, i) => (
+              <div className="group-row plain" key={i}><span className="step-n">{i + 1}</span><div className="row-body">{p}</div></div>
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  )
+}
+
+function Result({ run, onZoom, s }) {
+  const { report } = run
+  const good = report.status === 'done'
+  const kind = good ? 'pass' : report.status === 'stopped' ? 'warn' : 'fail'
+  const gallery = report.criteria.filter(c => c.screenshot)
+  return (
+    <>
+      <div className={`result ${kind}`}>
+        <div className="result-mark"><Check kind={kind} /></div>
+        <div className="result-title">{report.headline}</div>
+        <div className="result-sub">
+          {good ? 'Every success criterion was independently verified against the live systems.'
+            : report.stopped_because ? report.stopped_because : 'Some criteria were not met. Details below.'}
+        </div>
+        <StatRow s={s} />
       </div>
 
       {report.answer.length > 0 && (
@@ -96,7 +195,7 @@ function Summary({ run }) {
           <div className="group">
             {report.answer.map(a => (
               <div className="group-row plain" key={a.key}><div className="row-body">
-                <div className="row-label">{a.raw}</div>
+                <div className="answer">{a.raw}</div>
                 <div className="quote">“<span>{a.quote}</span>”</div>
               </div></div>
             ))}
@@ -105,7 +204,21 @@ function Summary({ run }) {
       )}
 
       <div className="group-title">Independently verified</div>
-      <Criteria criteria={report.criteria} />
+      <Criteria items={report.criteria} />
+
+      {gallery.length > 0 && (
+        <>
+          <div className="group-title">Evidence</div>
+          <div className="gallery">
+            {gallery.map(c => (
+              <figure key={c.id} onClick={() => onZoom(c.screenshot)}>
+                <img src={`/runs/${c.screenshot}`} alt={`Evidence for ${c.id}`} />
+                <figcaption><Check kind={c.status === 'pass' ? 'pass' : 'fail'} /> {c.id} · {c.url}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </>
+      )}
 
       {report.human.length > 0 && (
         <>
@@ -135,11 +248,6 @@ function Summary({ run }) {
           </div>
         </>
       )}
-
-      <p className="footnote">
-        {report.steps.work} work steps · {report.steps.verify} verification steps ·{' '}
-        {(report.tokens.tokens_in + report.tokens.tokens_out).toLocaleString()} tokens
-      </p>
     </>
   )
 }
@@ -151,15 +259,18 @@ function Activity({ steps, onZoom }) {
       {[...steps].reverse().map(s => {
         const args = s.tool === 'human' ? '' : Object.values(s.args).map(v => (typeof v === 'string' ? v : JSON.stringify(v))).join(' · ')
         return (
-          <div className="group-row plain" key={s.n}>
-            <span className="step-n">{s.n}</span>
+          <div className="group-row plain act" key={s.n}>
+            <div className={`act-icon ${s.mode} ${BAD.has(s.outcome) ? 'bad' : WAIT.has(s.outcome) ? 'wait' : ''}`}>
+              <Icon name={s.tool} size={16} />
+            </div>
             <div className="row-body">
               <div className="step-title">
-                <span className="step-tool">{s.tool.replaceAll('_', ' ')}</span>
+                <span className="step-tool">{TOOL_LABEL[s.tool] || s.tool}</span>
                 <span className={`step-outcome ${BAD.has(s.outcome) ? 'bad' : WAIT.has(s.outcome) ? 'wait' : ''}`}>
                   {s.outcome.replaceAll('_', ' ')}
                 </span>
                 {s.mode === 'verify' && <span className="step-mode">verify</span>}
+                <span className="step-n">#{s.n}</span>
               </div>
               {s.why && <div className="row-secondary">{s.why}</div>}
               {args && <div className="row-tertiary">{args.length > 160 ? args.slice(0, 160) + '…' : args}</div>}
@@ -178,23 +289,24 @@ function Facts({ facts }) {
   if (!entries.length) return <p className="footnote">Nothing recorded yet.</p>
   return (
     <>
-      <div className="group">
+      <div className="facts-grid">
         {entries.map(([key, f]) => (
-          <div className="group-row plain" key={key}><div className="row-body">
+          <div className="fact-card" key={key}>
             <div className="fact-key">{key.replaceAll('_', ' ')}</div>
             <div className="fact-value">{f.raw}</div>
-            <div className="quote">“<span>{f.quote}</span>” · {f.source}</div>
-          </div></div>
+            <div className="quote">“<span>{f.quote}</span>”</div>
+            <div className="row-tertiary">from {f.source}</div>
+          </div>
         ))}
       </div>
-      <p className="footnote">Every fact was checked against the quoted source before the worker could use it.</p>
+      <p className="footnote">Every fact was checked against its quoted source before the worker was allowed to use it.</p>
     </>
   )
 }
 
 export default function RunView({ threadId }) {
   const [run, setRun] = useState(null)
-  const [tab, setTab] = useState('summary')
+  const [tab, setTab] = useState('overview')
   const [zoom, setZoom] = useState(null)
 
   const load = useCallback(() => {
@@ -207,9 +319,12 @@ export default function RunView({ threadId }) {
     return () => clearInterval(timer)
   }, [load])
 
-  if (!run) return <div className="empty">Loading…</div>
+  const now = useClock(Boolean(run && (run.active || run.pending)))
+  if (!run) return <div className="empty"><span className="spinner" /></div>
 
-  const status = statusOf(run)
+  const s = stats(run, now)
+  const statusDot = run.pending ? 'waiting' : run.active ? 'running' : run.status
+  const statusText = run.pending ? 'Waiting for you' : run.active ? (run.mode === 'verify' ? 'Verifying its work' : 'Working') : statusLabel(run.status)
   const resume = () => fetch(`/api/runs/${threadId}/resume`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
   }).then(load)
@@ -218,9 +333,11 @@ export default function RunView({ threadId }) {
     <div className="page">
       <h1 className="large-title">{run.request}</h1>
       <div className="status-line">
-        <span className={`dot ${status.dot}`} />{status.text}
+        <span className={`dot ${statusDot}`} />{statusText}
         <span className="muted">· {run.thread_id}</span>
       </div>
+
+      <StageTrack run={run} />
 
       {run.error && <div className="notice error">The run stopped with an error: {run.error}</div>}
       {run.interrupted && !run.pending && !run.error && (
@@ -229,13 +346,13 @@ export default function RunView({ threadId }) {
       )}
 
       <div className="segmented" role="tablist">
-        {[['summary', 'Summary'], ['activity', `Activity (${run.steps.length})`], ['facts', 'Facts']].map(([id, label]) => (
+        {[['overview', 'Overview'], ['activity', `Activity (${run.steps.length})`], ['facts', `Facts (${Object.keys(run.facts).length})`]].map(([id, label]) => (
           <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'active' : ''}
                   onClick={() => setTab(id)}>{label}</button>
         ))}
       </div>
 
-      {tab === 'summary' && <Summary run={run} />}
+      {tab === 'overview' && (run.report ? <Result run={run} onZoom={setZoom} s={s} /> : <Live run={run} onZoom={setZoom} s={s} />)}
       {tab === 'activity' && <Activity steps={run.steps} onZoom={setZoom} />}
       {tab === 'facts' && <Facts facts={run.facts} />}
 
