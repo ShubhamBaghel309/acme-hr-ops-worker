@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Tickets · IT Helpdesk{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1>IT tickets</h1>
+  <a href="/it/tickets/new">New ticket</a>
+</div>
+<form method="get" action="/it/tickets" role="search">
+  <label for="q">Search by ticket ID or employee</label>
+  <input type="text" id="q" name="q" value="{{ q }}">
+  <button type="submit">Search</button>
+</form>
+<table>
+  <thead><tr><th>Ticket</th><th>Employee</th><th>Type</th><th>Status</th><th>Created</th></tr></thead>
+  <tbody>
+  {% for t in rows %}
+    <tr>
+      <td><a href="/it/tickets/{{ t.id }}">{{ t.id }}</a></td>
+      <td>{{ names.get(t.employee, t.employee) }} ({{ t.employee }})</td>
+      <td>{{ t.type }}</td>
+      <td>{{ t.status }}</td>
+      <td>{{ t.created | dmy }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="muted">No tickets match "{{ q }}".</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

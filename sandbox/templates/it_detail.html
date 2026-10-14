@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ t.id }} · IT Helpdesk{% endblock %}
+{% block content %}
+{% if notice %}<div class="flash" role="status">{{ notice }}</div>{% endif %}
+<p><a href="/it/tickets">&larr; Tickets</a></p>
+<h1>Ticket {{ t.id }}</h1>
+<table>
+  <tr><th>Employee</th><td>{% if emp %}{{ emp.full_name }} ({{ emp.code }}){% else %}{{ t.employee }}{% endif %}</td></tr>
+  <tr><th>Type</th><td>{{ t.type }}</td></tr>
+  <tr><th>Status</th><td>{{ t.status }}</td></tr>
+  <tr><th>Created</th><td>{{ t.created | dmy }}</td></tr>
+  <tr><th>Notes</th><td>{{ t.notes }}</td></tr>
+</table>
+<h2>Items</h2>
+<table>
+  <thead><tr><th>Item</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for i in t["items"] %}<tr><td>{{ i.name }}</td><td>{{ i.status }}</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endblock %}

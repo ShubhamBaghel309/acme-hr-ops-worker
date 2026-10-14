@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Sign in · Acme Portal{% endblock %}
+{% block content %}
+<h1>Sign in to Acme Portal</h1>
+{% if expired %}<div class="error" role="alert">Your session expired. Please sign in again.</div>{% endif %}
+{% if error %}<div class="error" role="alert">{{ error }}</div>{% endif %}
+<form method="post" action="/login">
+  <input type="hidden" name="next" value="{{ next }}">
+  <label for="email">Work email</label>
+  <input type="email" id="email" name="email" autocomplete="username">
+  <label for="password">Password</label>
+  <input type="password" id="password" name="password" autocomplete="current-password">
+  <button type="submit">Sign in</button>
+</form>
+{% endblock %}

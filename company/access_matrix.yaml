@@ -1,0 +1,18 @@
+# Which IT items a person gets. A new hire gets `default`, plus their department's
+# items, plus any items listed for their exact job title.
+default: [Email account, Slack]
+departments:
+  Leadership: [Laptop - MacBook Pro]
+  Engineering: [Laptop - Standard, GitHub, Jira]
+  Design: [Laptop - MacBook Pro, Figma, Jira]
+  Sales: [Laptop - Standard, Salesforce]
+  Finance: [Laptop - Standard, Payroll System]
+  People: [Laptop - Standard]
+titles:
+  Site Reliability Engineer: [AWS Production Console]
+
+# Granting any of these needs human approval.
+privileged: [AWS Production Console, Payroll System, Domain Admin]
+
+# A leaver's offboarding ticket contains exactly these items.
+offboarding: [Revoke all access, Collect laptop]

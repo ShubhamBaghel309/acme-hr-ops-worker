@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}New ticket · IT Helpdesk{% endblock %}
+{% block content %}
+<h1>New IT ticket</h1>
+{% for e in errors %}<div class="error" role="alert">{{ e }}</div>{% endfor %}
+<form method="post" action="/it/tickets">
+  <label for="employee">Employee</label>
+  <select id="employee" name="employee">
+    <option value="">Select an employee</option>
+    {% for e in employees %}<option value="{{ e.code }}" {{ "selected" if form.employee == e.code }}>{{ e.full_name }} ({{ e.code }}) - {{ e.title }}</option>{% endfor %}
+  </select>
+
+  <label for="type">Ticket type</label>
+  <select id="type" name="type">
+    <option value="">Select a type</option>
+    {% for t in types %}<option value="{{ t }}" {{ "selected" if form.type == t }}>{{ t }}</option>{% endfor %}
+  </select>
+
+  <fieldset>
+    <legend>Items and access</legend>
+    {% for item in catalog %}
+    <label><input type="checkbox" name="access" value="{{ item }}" {{ "checked" if item in chosen }}> {{ item }}</label>
+    {% endfor %}
+  </fieldset>
+
+  <label for="notes">Notes (optional)</label>
+  <textarea id="notes" name="notes" style="min-height: 60px">{{ form.notes or '' }}</textarea>
+
+  <button type="submit">{{ labels.it_create }}</button>
+</form>
+{% endblock %}

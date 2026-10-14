@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}New employee · People{% endblock %}
+{% block content %}
+<h1>New employee</h1>
+{% for e in errors %}<div class="error" role="alert">{{ e }}</div>{% endfor %}
+<form method="post" action="/hr/employees">
+  <label for="full_name">Full name</label>
+  <input type="text" id="full_name" name="full_name" value="{{ form.full_name or '' }}">
+
+  <label for="personal_email">Personal email</label>
+  <input type="email" id="personal_email" name="personal_email" value="{{ form.personal_email or '' }}">
+
+  <label for="title">Job title</label>
+  <input type="text" id="title" name="title" value="{{ form.title or '' }}">
+
+  <label for="department">Department</label>
+  <select id="department" name="department">
+    <option value="">Select a department</option>
+    {% for d in departments %}<option value="{{ d }}" {{ "selected" if form.department == d }}>{{ d }}</option>{% endfor %}
+  </select>
+
+  <label for="manager">Manager</label>
+  <select id="manager" name="manager">
+    <option value="">Select a manager</option>
+    {% for m in managers %}<option value="{{ m.code }}" {{ "selected" if form.manager == m.code }}>{{ m.full_name }} ({{ m.code }}) - {{ m.title }}</option>{% endfor %}
+  </select>
+
+  <label for="start_date">Start date</label>
+  <input type="text" id="start_date" name="start_date" placeholder="DD/MM/YYYY" value="{{ form.start_date or '' }}">
+
+  <label for="location">Work location</label>
+  <select id="location" name="location">
+    <option value="">Select a location</option>
+    {% for l in locations %}<option value="{{ l }}" {{ "selected" if form.location == l }}>{{ l }}</option>{% endfor %}
+  </select>
+
+  <button type="submit">{{ labels.hr_create }}</button>
+</form>
+{% endblock %}

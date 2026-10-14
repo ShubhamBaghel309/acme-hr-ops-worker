@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ folder }} · Mail{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1>Mail · {{ folder }}</h1>
+  <a href="/mail">Inbox</a> <a href="/mail/sent">Sent</a> <a href="/mail/compose">Compose</a>
+</div>
+<table>
+  <thead><tr><th>{{ "From" if folder == "Inbox" else "To" }}</th><th>Subject</th><th>Date</th><th>Attachment</th></tr></thead>
+  <tbody>
+  {% for m in mails %}
+    <tr>
+      <td>{{ m["from"] if folder == "Inbox" else m["to"] }}</td>
+      <td><a href="/mail/{{ m.id }}">{{ m.subject }}</a></td>
+      <td>{{ m.date }}</td>
+      <td>{{ m.attachment.filename if m.attachment else "" }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="muted">No messages.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

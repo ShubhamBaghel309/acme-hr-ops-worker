@@ -1,0 +1,58 @@
+# Acme's company profile: which systems the AI worker may use and which actions
+# need a human. The agent's code is generic; everything company-specific is here.
+company: Acme Corp
+email_domain: acme.example
+date_locale: DMY          # numeric dates are day-first (DD/MM/YYYY)
+
+portal:
+  base_url: http://127.0.0.1:8001   # SANDBOX_URL in .env overrides this
+  login:                            # filled automatically from .env, like a password manager
+    path: /login
+    user_field: '#email'
+    password_field: '#password'
+    submit: 'button[type=submit]'
+
+apps:
+  - id: mail
+    path: /mail
+    purpose: Company inbox. Requests from colleagues arrive here. Compose emails at /mail/compose; sent mail is at /mail/sent.
+  - id: hr
+    path: /hr/employees
+    purpose: People (HR) system of record. Search, create and deactivate employee records.
+  - id: it
+    path: /it/tickets
+    purpose: IT helpdesk. Raise tickets for laptops and system access, and check ticket status.
+
+# Requests to these paths are always refused.
+blocked_paths: [/admin, /logout]
+
+# Named patterns that rules can refer to.
+patterns:
+  money: '(?i)(₹|\binr\b\s*[\d,]+|\brs\.?\s*[\d,]+|\d[\d,]*\s*(lpa|lakhs?|crores?)\b|\bctc\b)'
+
+# Checked against every request the browser sends (the "egress gate").
+# approve: hold the request until a human approves this exact payload.
+# block:   refuse the request outright.
+egress_rules:
+  - id: external_email
+    description: Email to anyone outside the company
+    match: {method: POST, path: /mail/send}
+    when: {field: to, not_domain: acme.example}
+    action: approve
+    key_fields: [to, subject, body]
+  - id: privileged_access
+    description: Granting privileged system access
+    match: {method: POST, path: /it/tickets}
+    when: {field: access, any_privileged: true}
+    action: approve
+    key_fields: [employee, type, access]
+  - id: deactivate_employee
+    description: Ending someone's employment in HR
+    match: {method: POST, path_regex: '^/hr/employees/[^/]+/deactivate$'}
+    action: approve
+    key_fields: [path, last_day]
+  - id: no_money_in_messages
+    description: Compensation or money amounts in an email
+    match: {method: POST, path: /mail/send}
+    when: {field: body, matches: money}
+    action: block

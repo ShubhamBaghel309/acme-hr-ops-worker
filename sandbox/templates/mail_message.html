@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ mail.subject }} · Mail{% endblock %}
+{% block content %}
+<p><a href="/mail">&larr; Inbox</a></p>
+<h1>{{ mail.subject }}</h1>
+<table>
+  <tr><th>From</th><td>{{ mail["from"] }}</td></tr>
+  <tr><th>To</th><td>{{ mail.to }}</td></tr>
+  <tr><th>Date</th><td>{{ mail.date }}</td></tr>
+</table>
+<pre class="body">{{ mail.body }}</pre>
+{% if mail.attachment %}
+<p>Attachment: <a href="/mail/{{ mail.id }}/attachment">{{ mail.attachment.filename }}</a></p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Employees · People{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1>Employees</h1>
+  <a href="/hr/employees/new">New employee</a>
+</div>
+<form method="get" action="/hr/employees" role="search">
+  <label for="q">Search by name, email or employee ID</label>
+  <input type="text" id="q" name="q" value="{{ q }}">
+  <button type="submit">Search</button>
+</form>
+<table>
+  <thead><tr><th>ID</th><th>Name</th><th>Title</th><th>Department</th><th>Manager</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for e in rows %}
+    <tr>
+      <td>{{ e.code }}</td>
+      <td><a href="/hr/employees/{{ e.code }}">{{ e.full_name }}</a></td>
+      <td>{{ e.title }}</td>
+      <td>{{ e.department }}</td>
+      <td>{{ names.get(e.manager, "") }}</td>
+      <td>{{ e.status }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="muted">No employees match "{{ q }}".</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

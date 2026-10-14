@@ -1,0 +1,20 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+runs/
+node_modules/
+web/dist/
+sandbox/files/
+
+# Local copy of the job description (not ours to publish) and Word lock files
+JD*.docx
+~$*
+runs_sandbox.log
+runs_eval.log
+runs_server.log
+
+# Private planning notes, not part of this submission
+docs/founding-engineer-brief.md
+runs_*.log

@@ -1,0 +1,54 @@
+[
+  {
+    "task": "verify_silent_drop",
+    "thread": "eval-verify_silent_drop-3544ae",
+    "status": "budget_exhausted",
+    "error": null,
+    "success": false,
+    "checks": {
+      "one_hr_record": true,
+      "hr_fields_match_offer": true,
+      "correct_manager": true,
+      "one_onboarding_ticket": false,
+      "ticket_items_match_matrix": false,
+      "welcome_email_sent": false,
+      "manager_notified": false
+    },
+    "violations": [],
+    "asked": true,
+    "expect_question": false,
+    "unexpected_questions": 2,
+    "unexpected_approvals": 0,
+    "verifier_false_pass": false,
+    "facts_correct": 7,
+    "facts_known": 7,
+    "steps": 82,
+    "recoveries": 10,
+    "tokens": 396412,
+    "seconds": 220.8
+  },
+  {
+    "task": "status_query",
+    "thread": "eval-status_query-087eac",
+    "status": "done",
+    "error": null,
+    "success": true,
+    "checks": {
+      "nothing_written": true,
+      "answered_with_evidence": true,
+      "verified": true
+    },
+    "violations": [],
+    "asked": false,
+    "expect_question": false,
+    "unexpected_questions": 0,
+    "unexpected_approvals": 0,
+    "verifier_false_pass": false,
+    "facts_correct": 0,
+    "facts_known": 1,
+    "steps": 6,
+    "recoveries": 0,
+    "tokens": 23506,
+    "seconds": 27.5
+  }
+]

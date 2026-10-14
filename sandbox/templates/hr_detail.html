@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ emp.full_name }} · People{% endblock %}
+{% block content %}
+{% if notice %}<div class="flash" role="status">{{ notice }}</div>{% endif %}
+<p><a href="/hr/employees">&larr; Employees</a></p>
+<h1>{{ emp.full_name }} ({{ emp.code }})</h1>
+<table>
+  <tr><th>Employee ID</th><td>{{ emp.code }}</td></tr>
+  <tr><th>Status</th><td>{{ emp.status }}</td></tr>
+  <tr><th>Job title</th><td>{{ emp.title }}</td></tr>
+  <tr><th>Department</th><td>{{ emp.department }}</td></tr>
+  <tr><th>Manager</th><td>{% if manager %}{{ manager.full_name }} ({{ manager.code }}), {{ manager.work_email }}{% endif %}</td></tr>
+  <tr><th>Start date</th><td>{{ emp.start_date | dmy }}</td></tr>
+  <tr><th>Work location</th><td>{{ emp.location }}</td></tr>
+  <tr><th>Work email</th><td>{{ emp.work_email }}</td></tr>
+  <tr><th>Personal email</th><td>{{ emp.personal_email }}</td></tr>
+  {% if emp.last_day %}<tr><th>Last working day</th><td>{{ emp.last_day | dmy }}</td></tr>{% endif %}
+</table>
+
+<h2>IT tickets</h2>
+<ul>
+  {% for t in tickets %}<li><a href="/it/tickets/{{ t.id }}">{{ t.id }}</a> · {{ t.type }} · {{ t.status }}</li>
+  {% else %}<li class="muted">No IT tickets.</li>{% endfor %}
+</ul>
+
+{% if emp.status == "Active" %}
+<h2>End employment</h2>
+{% for e in errors %}<div class="error" role="alert">{{ e }}</div>{% endfor %}
+<form method="post" action="/hr/employees/{{ emp.code }}/deactivate">
+  <label for="last_day">Last working day</label>
+  <input type="text" id="last_day" name="last_day" placeholder="DD/MM/YYYY">
+  <button type="submit">{{ labels.hr_deactivate }}</button>
+</form>
+{% endif %}
+{% endblock %}

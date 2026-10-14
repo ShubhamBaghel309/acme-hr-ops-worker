@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Compose · Mail{% endblock %}
+{% block content %}
+<h1>New message</h1>
+{% for e in errors %}<div class="error" role="alert">{{ e }}</div>{% endfor %}
+<form method="post" action="/mail/send">
+  <label for="to">To</label>
+  <input type="text" id="to" name="to" value="{{ form.to or '' }}">
+  <div class="hint">Separate multiple addresses with commas.</div>
+  <label for="subject">Subject</label>
+  <input type="text" id="subject" name="subject" value="{{ form.subject or '' }}">
+  <label for="body">Message</label>
+  <textarea id="body" name="body">{{ form.body or '' }}</textarea>
+  <button type="submit">{{ labels.mail_send }}</button>
+</form>
+{% endblock %}

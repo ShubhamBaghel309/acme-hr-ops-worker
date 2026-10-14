@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Acme Portal{% endblock %}</title>
+  <style>
+    body { font-family: system-ui, Segoe UI, sans-serif; margin: 0; background: #f4f5f7; color: #1f2933; }
+    header { background: #1f3a5f; color: #fff; padding: 10px 24px; display: flex; gap: 24px; align-items: center; }
+    header a { color: #fff; text-decoration: none; }
+    header nav { display: flex; gap: 16px; flex: 1; }
+    header .who { font-size: 13px; opacity: .85; }
+    main { max-width: 960px; margin: 24px auto; background: #fff; padding: 24px 32px; border-radius: 6px; }
+    h1 { font-size: 22px; margin-top: 0; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e3e7eb; font-size: 14px; }
+    label { display: block; font-weight: 600; margin-top: 12px; font-size: 14px; }
+    input[type=text], input[type=email], input[type=password], select, textarea { width: 100%; padding: 7px; font-size: 14px; box-sizing: border-box; }
+    textarea { min-height: 160px; }
+    fieldset { margin-top: 12px; border: 1px solid #d0d7de; }
+    fieldset label { font-weight: normal; display: inline-block; width: 45%; margin-top: 4px; }
+    button { margin-top: 16px; background: #1f6feb; color: #fff; border: 0; padding: 8px 18px; border-radius: 4px; font-size: 14px; cursor: pointer; }
+    .flash { background: #e6f4ea; border: 1px solid #b7dfc3; padding: 8px 12px; margin-bottom: 12px; }
+    .error { background: #fdecea; border: 1px solid #f5c2c0; padding: 8px 12px; margin-bottom: 12px; }
+    .hint { font-size: 12px; color: #52606d; }
+    .muted { color: #52606d; font-size: 13px; }
+    pre.body { white-space: pre-wrap; font-family: inherit; background: #f8fafc; padding: 12px; }
+    .toolbar { display: flex; gap: 12px; align-items: center; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/"><strong>Acme Portal</strong></a>
+    {% if user %}
+    <nav>
+      <a href="/mail">Mail</a>
+      <a href="/hr/employees">People (HR)</a>
+      <a href="/it/tickets">IT Helpdesk</a>
+    </nav>
+    <span class="who">Signed in as {{ user }} · <a href="/logout">Sign out</a></span>
+    {% endif %}
+  </header>
+  <main>
+    {% for f in flashes %}<div class="flash" role="status">{{ f }}</div>{% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
